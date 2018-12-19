@@ -14,13 +14,13 @@ public class XlendarMainClass {
         Statement statement = null;
         ResultSet rs = null;
         try {
-            connection = DriverManager.getConnection("jdbc:sqlite:C:\\Xlendar\\lib\\xlendar.db2");
+            connection = DriverManager.getConnection("jdbc:sqlite:D:\\Xlendar\\lib\\xlendar.db2");
             statement = connection.createStatement();
 
             statement.executeUpdate("DROP TABLE IF EXISTS event");
-            statement.executeUpdate("CREATE TABLE event(PRIMARY KEY(eventId) , date CHAR(20) , time CHAR(20) ," +
-                    " eventName CHAR(40))");
-
+            statement.executeUpdate("CREATE TABLE event(eventId int , date string , time string ," +
+                    " eventName string)");
+            statement.executeUpdate("insert into event values(1, '2018.12.20', '8:00', 'XX class')");
         }catch (SQLException e){
             System.err.println(e.getMessage());
         } catch (Exception e) {
