@@ -16,6 +16,7 @@ public class XlendarMainClass {
         try {
             connection = DriverManager.getConnection("jdbc:sqlite:C:\\Xlendar\\lib\\xlendar.db2");
             statement = connection.createStatement();
+
             statement.executeUpdate("DROP TABLE IF EXISTS event");
             statement.executeUpdate("CREATE TABLE event(PRIMARY KEY(eventId) , date CHAR(20) , time CHAR(20) ," +
                     " eventName CHAR(40))");
