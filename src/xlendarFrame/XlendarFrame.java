@@ -7,6 +7,7 @@ import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.sql.*;
 import java.util.Calendar;
 
 public class XlendarFrame extends JFrame implements ActionListener {
@@ -16,8 +17,14 @@ public class XlendarFrame extends JFrame implements ActionListener {
     Calendar getDate = Calendar.getInstance();
     JButton eventButtons[] = new JButton[63];
 
+    Connection connection = null;
+    Statement statement = null;
+    ResultSet rs = null;
+    static int eventNumber;
+
     public XlendarFrame()
     {
+        dbConnection();
         setBackground(new Color(249,248,235));
         JPanel pCenter=new JPanel();
         pCenter.setBackground(new Color(249,248,235));
@@ -38,11 +45,17 @@ public class XlendarFrame extends JFrame implements ActionListener {
         for(int i = 0; i < 63; i++)
         {
             eventButtons[i] = new JButton("");
+            eventNumber = i;
             eventButtons[i].addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     String inputEvent = JOptionPane.showInputDialog("Input Event");
                     String inputTime = JOptionPane.showInputDialog("Time");
+                    try{
+                        statement.executeUpdate("insert into event values("+ eventNumber +", '2018.12.20'," + inputTime + "," + inputEvent);
+                    }catch(SQLException e1){
+                        System.out.println(e1.getErrorCode());
+                    }
                 }
             });
         }
@@ -82,7 +95,40 @@ public class XlendarFrame extends JFrame implements ActionListener {
 //       scrollPane.add(pCenter);
 //       getContentPane().add(scrollPane,BorderLayout.CENTER);
 
+        try {
+            if (rs != null) {
+                rs.close();
+            }
+            if (connection != null){
+                connection.close();
+            }
+        } catch (SQLException e) {
+            // connection close failed.
+            System.err.println(e);
+        }
+    }
 
+
+
+    public void dbConnection(){
+        try {
+            Class.forName("org.sqlite.JDBC");
+        }catch (Exception e){
+            e.getMessage();
+        }
+
+        try {
+            connection = DriverManager.getConnection("jdbc:sqlite:D:\\Xlendar\\lib\\xlendar.db2");
+            statement = connection.createStatement();
+
+            statement.executeUpdate("DROP TABLE IF EXISTS event");
+            statement.executeUpdate("CREATE TABLE event(eventId string , date string , time string ," +
+                    " eventName string)");
+        }catch (SQLException e){
+            System.err.println(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     JPanel showBorder(Border b, String borderName) {
