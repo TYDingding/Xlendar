@@ -16,6 +16,7 @@ public class XlendarFrame extends JFrame implements ActionListener {
     JLabel showMessage=new JLabel("",JLabel.CENTER);
     Calendar getDate = Calendar.getInstance();
     JButton eventButtons[] = new JButton[63];
+    String today;
 
     Connection connection = null;
     Statement statement = null;
@@ -49,15 +50,19 @@ public class XlendarFrame extends JFrame implements ActionListener {
         }
 
         try {
-            connection = DriverManager.getConnection("jdbc:sqlite:C:\\Xlendar\\lib\\xlendar.db2");
+            connection = DriverManager.getConnection("jdbc:sqlite:D:\\Xlendar\\lib\\xlendar.db2");
             statement = connection.createStatement();
 
             statement.executeUpdate("DROP TABLE IF EXISTS event");
-            statement.executeUpdate("CREATE TABLE event(eventId string , date string , time string ," +
+            statement.executeUpdate("CREATE TABLE event(eventId integer , date string , time string ," +
                     " eventName string)");
+
             //initialize eventButtons
             for(int i = 0; i < 63; i++)
             {
+                if(connection.isClosed()){
+                    System.out.println("connection is closed!");
+                }
                 eventButtons[i] = new JButton("");
                 eventNumber[i] = i;
                 buttonActionPerformed(eventButtons[i], eventNumber[i]);
@@ -81,13 +86,6 @@ public class XlendarFrame extends JFrame implements ActionListener {
                 }
             }
         }
-        //pCenter.add();
-
-//        for(int i=0;i<42;i++)
-//        {
-//            labelDay[i]=new JLabel("",JLabel.CENTER);
-//            pCenter.add(labelDay[i]);
-//        }
 
         //Show date of today
         JPanel pToday=new JPanel();
@@ -95,7 +93,8 @@ public class XlendarFrame extends JFrame implements ActionListener {
         int year=getDate.get(getDate.YEAR);
         int month=getDate.get(getDate.MONTH)+1;
         int day=getDate.get(getDate.DAY_OF_MONTH);
-        showMessage.setText("Today :" + year + "." + month + "." + day);
+        today = year + "." + month + "." + day;
+        showMessage.setText("Today :" +today);
         showMessage.setFont(new java.awt.Font("宋体",1,18));
         getContentPane().add(pToday,BorderLayout.NORTH);
 
@@ -104,17 +103,6 @@ public class XlendarFrame extends JFrame implements ActionListener {
 //       scrollPane.add(pCenter);
 //       getContentPane().add(scrollPane,BorderLayout.CENTER);
 
-        try {
-            if (rs != null) {
-                rs.close();
-            }
-            if (connection != null){
-                connection.close();
-            }
-        } catch (SQLException e) {
-            // connection close failed.
-            System.err.println(e);
-        }
     }
 
 
@@ -126,11 +114,11 @@ public class XlendarFrame extends JFrame implements ActionListener {
         }
 
         try {
-            connection = DriverManager.getConnection("jdbc:sqlite:C:\\Xlendar\\lib\\xlendar.db2");
+            connection = DriverManager.getConnection("jdbc:sqlite:D:\\Xlendar\\lib\\xlendar.db2");
             statement = connection.createStatement();
 
             statement.executeUpdate("DROP TABLE IF EXISTS event");
-            statement.executeUpdate("CREATE TABLE event(eventId string , date string , time string ," +
+            statement.executeUpdate("CREATE TABLE event(eventId integer , date string , time string ," +
                     " eventName string)");
         }catch (SQLException e){
             System.err.println(e.getMessage());
@@ -156,10 +144,15 @@ public class XlendarFrame extends JFrame implements ActionListener {
                 String inputEvent = JOptionPane.showInputDialog("Input Event");
                 String inputTime = JOptionPane.showInputDialog("Time");
                 button.setText(inputTime + "\n" + inputEvent);
+
                 try{
-                    statement.executeUpdate("insert into event values("+ i +", '2018.12.20'," + inputTime + "," + inputEvent);
+                    if(connection.isClosed()){
+                        System.out.println("Connection is closed");
+                    }
+                    statement.executeUpdate("insert into event values("+ i +",'" + today + "','" + inputTime + "','" + inputEvent + "')");
                 }catch(SQLException e1){
                     System.out.println(e1.getErrorCode());
+
                 }
             }
         });
