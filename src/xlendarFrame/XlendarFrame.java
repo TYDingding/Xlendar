@@ -20,11 +20,10 @@ public class XlendarFrame extends JFrame implements ActionListener {
     Connection connection = null;
     Statement statement = null;
     ResultSet rs = null;
-    static int eventNumber;
+    static int eventNumber[] = new int[63];
 
     public XlendarFrame()
     {
-        dbConnection();
         setBackground(new Color(249,248,235));
         JPanel pCenter=new JPanel();
         pCenter.setBackground(new Color(249,248,235));
@@ -41,24 +40,34 @@ public class XlendarFrame extends JFrame implements ActionListener {
         pCenter.add(showBorder(new BevelBorder(BevelBorder.RAISED, Color.DARK_GRAY, Color.GRAY), "Saturday"));
         pCenter.add(showBorder(new BevelBorder(BevelBorder.RAISED, Color.DARK_GRAY, Color.GRAY), "Sunday"));
 
-        //initialize eventButtons
-        for(int i = 0; i < 63; i++)
-        {
-            eventButtons[i] = new JButton("");
-            eventNumber = i;
-            eventButtons[i].addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    String inputEvent = JOptionPane.showInputDialog("Input Event");
-                    String inputTime = JOptionPane.showInputDialog("Time");
-                    try{
-                        statement.executeUpdate("insert into event values("+ eventNumber +", '2018.12.20'," + inputTime + "," + inputEvent);
-                    }catch(SQLException e1){
-                        System.out.println(e1.getErrorCode());
-                    }
-                }
-            });
+        //dbConnection();
+
+        try {
+            Class.forName("org.sqlite.JDBC");
+        }catch (Exception e){
+            e.getMessage();
         }
+
+        try {
+            connection = DriverManager.getConnection("jdbc:sqlite:C:\\Xlendar\\lib\\xlendar.db2");
+            statement = connection.createStatement();
+
+            statement.executeUpdate("DROP TABLE IF EXISTS event");
+            statement.executeUpdate("CREATE TABLE event(eventId string , date string , time string ," +
+                    " eventName string)");
+            //initialize eventButtons
+            for(int i = 0; i < 63; i++)
+            {
+                eventButtons[i] = new JButton("");
+                eventNumber[i] = i;
+                buttonActionPerformed(eventButtons[i], eventNumber[i]);
+            }
+        }catch (SQLException e){
+            System.err.println(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
 
         //add eventButtons to grid
         for (int i = 0, j = 0; i < 72; i++)
@@ -109,8 +118,7 @@ public class XlendarFrame extends JFrame implements ActionListener {
     }
 
 
-
-    public void dbConnection(){
+    public  void dbConnection(){
         try {
             Class.forName("org.sqlite.JDBC");
         }catch (Exception e){
@@ -118,7 +126,7 @@ public class XlendarFrame extends JFrame implements ActionListener {
         }
 
         try {
-            connection = DriverManager.getConnection("jdbc:sqlite:D:\\Xlendar\\lib\\xlendar.db2");
+            connection = DriverManager.getConnection("jdbc:sqlite:C:\\Xlendar\\lib\\xlendar.db2");
             statement = connection.createStatement();
 
             statement.executeUpdate("DROP TABLE IF EXISTS event");
@@ -139,6 +147,22 @@ public class XlendarFrame extends JFrame implements ActionListener {
         jp.add(new JLabel(mm, JLabel.CENTER), BorderLayout.CENTER);
         jp.setBorder(b);
         return jp;
+    }
+
+    public void buttonActionPerformed(JButton button, int i){
+        button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String inputEvent = JOptionPane.showInputDialog("Input Event");
+                String inputTime = JOptionPane.showInputDialog("Time");
+                button.setText(inputTime + "\n" + inputEvent);
+                try{
+                    statement.executeUpdate("insert into event values("+ i +", '2018.12.20'," + inputTime + "," + inputEvent);
+                }catch(SQLException e1){
+                    System.out.println(e1.getErrorCode());
+                }
+            }
+        });
     }
 
     public void actionPerformed(ActionEvent e){
