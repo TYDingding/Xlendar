@@ -7,6 +7,10 @@ import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.sql.*;
 import java.util.Calendar;
 
@@ -23,8 +27,26 @@ public class XlendarFrame extends JFrame implements ActionListener {
     ResultSet rs = null;
     static int eventNumber[] = new int[63];
 
+    Socket client = null;
+    String serverAddr = "localhost";
+    int serverPort = 8888;
+    PrintWriter out;
+
     public XlendarFrame()
     {
+
+        try {
+            client = new Socket(serverAddr, serverPort);
+            System.out.println("Client: " + client);
+            out = new PrintWriter(client.getOutputStream());
+            out.println("Hello");
+            out.flush();  // need to flush a short message
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         setBackground(new Color(249,248,235));
         JPanel pCenter=new JPanel();
         pCenter.setBackground(new Color(249,248,235));
@@ -43,35 +65,33 @@ public class XlendarFrame extends JFrame implements ActionListener {
 
         //dbConnection();
 
-        try {
-            Class.forName("org.sqlite.JDBC");
-        }catch (Exception e){
-            e.getMessage();
-        }
-
-        try {
-            connection = DriverManager.getConnection("jdbc:sqlite:D:\\Xlendar\\lib\\xlendar.db2");
-            statement = connection.createStatement();
-
-            statement.executeUpdate("DROP TABLE IF EXISTS event");
-            statement.executeUpdate("CREATE TABLE event(eventId integer , date string , time string ," +
-                    " eventName string)");
-
+//        try {
+//            Class.forName("org.sqlite.JDBC");
+//        }catch (Exception e){
+//            e.getMessage();
+//        }
+//
+//        try {
+//            connection = DriverManager.getConnection("jdbc:sqlite:D:\\Xlendar\\lib\\xlendar.db2");
+//            statement = connection.createStatement();
+//
+//            statement.executeUpdate("DROP TABLE IF EXISTS event");
+//            statement.executeUpdate("CREATE TABLE event(eventId integer , date string , time string ," +
+//                    " eventName string)");
+//
             //initialize eventButtons
             for(int i = 0; i < 63; i++)
             {
-                if(connection.isClosed()){
-                    System.out.println("connection is closed!");
-                }
                 eventButtons[i] = new JButton("");
                 eventNumber[i] = i;
                 buttonActionPerformed(eventButtons[i], eventNumber[i]);
             }
-        }catch (SQLException e){
-            System.err.println(e.getMessage());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+
+//        }catch (SQLException e){
+//            System.err.println(e.getMessage());
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
 
 
         //add eventButtons to grid
@@ -144,16 +164,20 @@ public class XlendarFrame extends JFrame implements ActionListener {
                 String inputEvent = JOptionPane.showInputDialog("Input Event");
                 String inputTime = JOptionPane.showInputDialog("Time");
                 button.setText(inputTime + "\n" + inputEvent);
+                String message = "insert into event values('"+ i +"','" + today + "','" + inputTime + "','" + inputEvent + "')";
 
-                try{
-                    if(connection.isClosed()){
-                        System.out.println("Connection is closed");
-                    }
-                    statement.executeUpdate("insert into event values("+ i +",'" + today + "','" + inputTime + "','" + inputEvent + "')");
-                }catch(SQLException e1){
-                    System.out.println(e1.getErrorCode());
+                out.println(message);
+                out.flush();
 
-                }
+//                try{
+//                    if(connection.isClosed()){
+//                        System.out.println("Connection is closed");
+//                    }
+//                    statement.executeUpdate("insert into event values("+ i +",'" + today + "','" + inputTime + "','" + inputEvent + "')");
+//                }catch(SQLException e1){
+//                    System.out.println(e1.getErrorCode());
+
+ //               }
             }
         });
     }
