@@ -7,8 +7,7 @@ import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.sql.*;
@@ -20,7 +19,11 @@ public class XlendarFrame extends JFrame implements ActionListener {
     JLabel showMessage=new JLabel("",JLabel.CENTER);
     Calendar getDate = Calendar.getInstance();
     JButton eventButtons[] = new JButton[63];
-    String today;
+    static String today;
+    String todayOfWeek;
+    String[] weekDays = { "星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六" };
+    JButton nextMonth;
+    JButton previousMonth;
 
     Connection connection = null;
     Statement statement = null;
@@ -32,9 +35,11 @@ public class XlendarFrame extends JFrame implements ActionListener {
     int serverPort = 8888;
     PrintWriter out;
 
+    File localRecordFile;
+
     public XlendarFrame()
     {
-
+        //Connect to Server
         try {
             client = new Socket(serverAddr, serverPort);
             System.out.println("Client: " + client);
@@ -46,6 +51,18 @@ public class XlendarFrame extends JFrame implements ActionListener {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        //Create local file to record events
+        localRecordFile = new File("d:"+File.separator+"Xlendar"+File.separator+"localRecordFile.txt") ;        // 实例化File类的对象
+        if(localRecordFile.exists()){
+        }else{
+            try{
+                localRecordFile.createNewFile() ;        // 创建文件，根据给定的路径创建
+            }catch(IOException e){
+                e.printStackTrace() ;    // 输出异常信息
+            }
+        }
+
 
         setBackground(new Color(249,248,235));
         JPanel pCenter=new JPanel();
@@ -80,8 +97,7 @@ public class XlendarFrame extends JFrame implements ActionListener {
 //                    " eventName string)");
 //
             //initialize eventButtons
-            for(int i = 0; i < 63; i++)
-            {
+            for (int i = 0; i < 63; i++) {
                 eventButtons[i] = new JButton("");
                 eventNumber[i] = i;
                 buttonActionPerformed(eventButtons[i], eventNumber[i]);
@@ -107,6 +123,11 @@ public class XlendarFrame extends JFrame implements ActionListener {
             }
         }
 
+        nextMonth = new JButton("下周");
+        previousMonth = new JButton("上周");
+        nextMonth.addActionListener(this);
+        previousMonth.addActionListener(this);
+
         //Show date of today
         JPanel pToday=new JPanel();
         pToday.add(showMessage);
@@ -114,14 +135,20 @@ public class XlendarFrame extends JFrame implements ActionListener {
         int month=getDate.get(getDate.MONTH)+1;
         int day=getDate.get(getDate.DAY_OF_MONTH);
         today = year + "." + month + "." + day;
-        showMessage.setText("Today :" +today);
+        int w = getDate.get(Calendar.DAY_OF_WEEK) - 1;
+        if(w < 0)w = 0;
+        todayOfWeek = weekDays[w];
+        showMessage.setText("Today :" +today + "  " + todayOfWeek);
         showMessage.setFont(new java.awt.Font("宋体",1,18));
+
+        pToday.add(nextMonth);
+        pToday.add(previousMonth);
         getContentPane().add(pToday,BorderLayout.NORTH);
 
         getContentPane().add(pCenter);
-//       ScrollPane scrollPane=new ScrollPane();
-//       scrollPane.add(pCenter);
-//       getContentPane().add(scrollPane,BorderLayout.CENTER);
+       ScrollPane scrollPane=new ScrollPane();
+       scrollPane.add(pCenter);
+       getContentPane().add(scrollPane,BorderLayout.CENTER);
 
     }
 
@@ -161,13 +188,36 @@ public class XlendarFrame extends JFrame implements ActionListener {
         button.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String inputEvent = JOptionPane.showInputDialog("Input Event");
-                String inputTime = JOptionPane.showInputDialog("Time");
-                button.setText(inputTime + "\n" + inputEvent);
-                String message = "insert into event values('"+ i +"','" + today + "','" + inputTime + "','" + inputEvent + "')";
+                FileOutputStream outPut = null;
+                try {
+                    outPut = new FileOutputStream(localRecordFile,false);
+                    OutputStreamWriter writer = new OutputStreamWriter(outPut, "gbk");
 
-                out.println(message);
-                out.flush();
+                    String inputEvent = JOptionPane.showInputDialog("Input Event");
+                    String inputTime = JOptionPane.showInputDialog("Time");
+                    button.setText(inputTime + "\n" + inputEvent);
+                    String message = "insert into event values('"+ i +"','" + today + "','" + inputTime + "','" + inputEvent + "')";
+
+                    writer.append(message);
+                    writer.append("\r\n");
+                    writer.close();
+
+                    out.println(message);
+                    out.flush();
+
+                }catch(Exception e2){
+                    e2.printStackTrace();
+                }finally {
+                    try {
+                        if(outPut != null){
+                            outPut.close();
+                        }
+                    }catch (IOException e3){
+                        e3.printStackTrace();
+                    }
+                }
+
+
 
 //                try{
 //                    if(connection.isClosed()){
@@ -182,7 +232,19 @@ public class XlendarFrame extends JFrame implements ActionListener {
         });
     }
 
-    public void actionPerformed(ActionEvent e){
 
+    public void actionPerformed(ActionEvent e){
+        if(e.getSource()==nextMonth){
+            setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+            XlendarFrame xlendarFrame = new XlendarFrame();
+            xlendarFrame.setBounds(200,200,1000,600);
+            xlendarFrame.setTitle("Xlendar");
+            xlendarFrame.setLocationRelativeTo(null);//窗体居中显示
+            xlendarFrame.setVisible(true);
+            xlendarFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        }
+        else if(e.getSource()==previousMonth){
+
+        }
     }
 }
