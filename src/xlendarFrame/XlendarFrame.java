@@ -13,6 +13,7 @@ import java.net.UnknownHostException;
 import java.sql.*;
 import java.util.Calendar;
 
+
 public class XlendarFrame extends JFrame implements ActionListener {
 //    JLabel labelDay[] = new JLabel[42];
     JTextField  text=new JTextField(10);
@@ -22,12 +23,10 @@ public class XlendarFrame extends JFrame implements ActionListener {
     static String today;
     String todayOfWeek;
     String[] weekDays = { "星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六" };
+    int week;
     JButton nextMonth;
     JButton previousMonth;
 
-    Connection connection = null;
-    Statement statement = null;
-    ResultSet rs = null;
     static int eventNumber[] = new int[63];
 
     Socket client = null;
@@ -37,9 +36,10 @@ public class XlendarFrame extends JFrame implements ActionListener {
 
     File localRecordFile;
 
-    public XlendarFrame()
+    public XlendarFrame(int week)
     {
         //Connect to Server
+        this.week = week;
         try {
             client = new Socket(serverAddr, serverPort);
             System.out.println("Client: " + client);
@@ -53,7 +53,7 @@ public class XlendarFrame extends JFrame implements ActionListener {
         }
 
         //Create local file to record events
-        localRecordFile = new File("d:"+File.separator+"Xlendar"+File.separator+"localRecordFile.txt") ;        // 实例化File类的对象
+        localRecordFile = new File("c:"+File.separator+"Xlendar"+File.separator+"localRecordFile.txt") ;        // 实例化File类的对象
         if(localRecordFile.exists()){
         }else{
             try{
@@ -97,11 +97,41 @@ public class XlendarFrame extends JFrame implements ActionListener {
 //                    " eventName string)");
 //
             //initialize eventButtons
-            for (int i = 0; i < 63; i++) {
-                eventButtons[i] = new JButton("");
-                eventNumber[i] = i;
-                buttonActionPerformed(eventButtons[i], eventNumber[i]);
+
+        try {
+            if (client == null) {
+                for (int i = 0; i < 63; i++) {
+                        eventButtons[i] = new JButton("");
+                        eventNumber[i] = i;
+                    buttonActionPerformed(eventButtons[i], i, this.week);
+                }
+
+                try{
+                    FileInputStream fis = new FileInputStream(localRecordFile);
+                    //Construct BufferedReader from InputStreamReader
+                    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+
+                    String line = null;
+                    String[] sourceStrArray = null;
+                    while ((line = br.readLine()) != null) {
+                        sourceStrArray = line.split("'");
+                        int t1 = Integer.parseInt(sourceStrArray[1]);
+                        int t2 = Integer.parseInt(sourceStrArray[3]);
+                        if(t1 == this.week){
+                            eventButtons[t2].setText(sourceStrArray[7]+sourceStrArray[9]);
+                        }
+                    }
+                }catch(Exception e){
+                    e.printStackTrace();
+                }
+
+            }else{
+
             }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
 
 //        }catch (SQLException e){
 //            System.err.println(e.getMessage());
@@ -138,7 +168,8 @@ public class XlendarFrame extends JFrame implements ActionListener {
         int w = getDate.get(Calendar.DAY_OF_WEEK) - 1;
         if(w < 0)w = 0;
         todayOfWeek = weekDays[w];
-        showMessage.setText("Today :" +today + "  " + todayOfWeek);
+        this.week = week;
+        showMessage.setText("Today :" +today + "   " + todayOfWeek + "          week:" + week);
         showMessage.setFont(new java.awt.Font("宋体",1,18));
 
         pToday.add(nextMonth);
@@ -153,27 +184,6 @@ public class XlendarFrame extends JFrame implements ActionListener {
     }
 
 
-    public  void dbConnection(){
-        try {
-            Class.forName("org.sqlite.JDBC");
-        }catch (Exception e){
-            e.getMessage();
-        }
-
-        try {
-            connection = DriverManager.getConnection("jdbc:sqlite:D:\\Xlendar\\lib\\xlendar.db2");
-            statement = connection.createStatement();
-
-            statement.executeUpdate("DROP TABLE IF EXISTS event");
-            statement.executeUpdate("CREATE TABLE event(eventId integer , date string , time string ," +
-                    " eventName string)");
-        }catch (SQLException e){
-            System.err.println(e.getMessage());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     JPanel showBorder(Border b, String borderName) {
         JPanel jp = new JPanel();
         jp.setLayout(new BorderLayout());
@@ -184,19 +194,19 @@ public class XlendarFrame extends JFrame implements ActionListener {
         return jp;
     }
 
-    public void buttonActionPerformed(JButton button, int i){
+    public void buttonActionPerformed(JButton button, int i, int w){
         button.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 FileOutputStream outPut = null;
                 try {
-                    outPut = new FileOutputStream(localRecordFile,false);
+                    outPut = new FileOutputStream(localRecordFile,true);
                     OutputStreamWriter writer = new OutputStreamWriter(outPut, "gbk");
 
                     String inputEvent = JOptionPane.showInputDialog("Input Event");
                     String inputTime = JOptionPane.showInputDialog("Time");
                     button.setText(inputTime + "\n" + inputEvent);
-                    String message = "insert into event values('"+ i +"','" + today + "','" + inputTime + "','" + inputEvent + "')";
+                    String message = "insert into event values('"+ w + "','" + i + "','" + today + "','" + inputTime + "','" + inputEvent + "')";
 
                     writer.append(message);
                     writer.append("\r\n");
@@ -217,8 +227,6 @@ public class XlendarFrame extends JFrame implements ActionListener {
                     }
                 }
 
-
-
 //                try{
 //                    if(connection.isClosed()){
 //                        System.out.println("Connection is closed");
@@ -234,9 +242,9 @@ public class XlendarFrame extends JFrame implements ActionListener {
 
 
     public void actionPerformed(ActionEvent e){
-        if(e.getSource()==nextMonth){
+        if(e.getSource() == nextMonth){
             setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-            XlendarFrame xlendarFrame = new XlendarFrame();
+            XlendarFrame xlendarFrame = new XlendarFrame(this.week+1);
             xlendarFrame.setBounds(200,200,1000,600);
             xlendarFrame.setTitle("Xlendar");
             xlendarFrame.setLocationRelativeTo(null);//窗体居中显示
@@ -244,7 +252,13 @@ public class XlendarFrame extends JFrame implements ActionListener {
             xlendarFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         }
         else if(e.getSource()==previousMonth){
-
+            setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+            XlendarFrame xlendarFrame = new XlendarFrame(this.week-1);
+            xlendarFrame.setBounds(200,200,1000,600);
+            xlendarFrame.setTitle("Xlendar");
+            xlendarFrame.setLocationRelativeTo(null);//窗体居中显示
+            xlendarFrame.setVisible(true);
+            xlendarFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         }
     }
 }
