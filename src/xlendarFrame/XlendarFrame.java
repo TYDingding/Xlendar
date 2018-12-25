@@ -44,7 +44,7 @@ public class XlendarFrame extends JFrame implements ActionListener {
             client = new Socket(serverAddr, serverPort);
             System.out.println("Client: " + client);
             out = new PrintWriter(client.getOutputStream());
-            out.println("Hello");
+            out.println(week + ",Hello");
             out.flush();  // need to flush a short message
         } catch (UnknownHostException e) {
             e.printStackTrace();
@@ -53,7 +53,7 @@ public class XlendarFrame extends JFrame implements ActionListener {
         }
 
         //Create local file to record events
-        localRecordFile = new File("c:"+File.separator+"Xlendar"+File.separator+"localRecordFile.txt") ;        // 实例化File类的对象
+        localRecordFile = new File("d:"+File.separator+"Xlendar"+File.separator+"localRecordFile.txt") ;        // 实例化File类的对象
         if(localRecordFile.exists()){
         }else{
             try{
@@ -80,36 +80,20 @@ public class XlendarFrame extends JFrame implements ActionListener {
         pCenter.add(showBorder(new BevelBorder(BevelBorder.RAISED, Color.DARK_GRAY, Color.GRAY), "Saturday"));
         pCenter.add(showBorder(new BevelBorder(BevelBorder.RAISED, Color.DARK_GRAY, Color.GRAY), "Sunday"));
 
-        //dbConnection();
-
-//        try {
-//            Class.forName("org.sqlite.JDBC");
-//        }catch (Exception e){
-//            e.getMessage();
-//        }
-//
-//        try {
-//            connection = DriverManager.getConnection("jdbc:sqlite:D:\\Xlendar\\lib\\xlendar.db2");
-//            statement = connection.createStatement();
-//
-//            statement.executeUpdate("DROP TABLE IF EXISTS event");
-//            statement.executeUpdate("CREATE TABLE event(eventId integer , date string , time string ," +
-//                    " eventName string)");
-//
-            //initialize eventButtons
-
         try {
-            if (client == null) {
                 for (int i = 0; i < 63; i++) {
                         eventButtons[i] = new JButton("");
                         eventNumber[i] = i;
                     buttonActionPerformed(eventButtons[i], i, this.week);
                 }
 
+                //IO
+                    FileInputStream fis = null;
+                    BufferedReader br = null;
                 try{
-                    FileInputStream fis = new FileInputStream(localRecordFile);
+                    fis = new FileInputStream(localRecordFile);
                     //Construct BufferedReader from InputStreamReader
-                    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+                    br = new BufferedReader(new InputStreamReader(fis));
 
                     String line = null;
                     String[] sourceStrArray = null;
@@ -123,13 +107,45 @@ public class XlendarFrame extends JFrame implements ActionListener {
                     }
                 }catch(Exception e){
                     e.printStackTrace();
+                }finally {
+                    try{
+                        if (br != null)br.close();
+                        if (fis != null)fis.close();
+                    }catch(IOException e1){
+                        e1.printStackTrace();
+                    }
                 }
 
-            }else{
+                //Connect to database
+                if (client != null){
+                    InputStream in = null;
+                    BufferedReader rd = null;
+                    try{
+                        in = client.getInputStream();
+                        rd = new BufferedReader(new InputStreamReader(in));
+                        String line = null;
+                        String[] sourceStrArray;
+                        while ((line = rd.readLine()) != null) {
+                            if (line.equals("No"))break;
+                            System.out.println(line);
+                            sourceStrArray = line.split(",");
+                            int t1 = Integer.parseInt(sourceStrArray[0]);
+                            eventButtons[t1].setText(sourceStrArray[1] + sourceStrArray[2]);
+                        }
+                    }catch (IOException e3){
+                        e3.printStackTrace();
+                    }finally {
+                        try{
+                            if(in != null)in.close();
+                            if (rd != null)rd.close();
+                        }catch (IOException e4){
+                            e4.printStackTrace();
+                        }
+                    }
+                }
 
-            }
-        }catch (Exception e){
-            e.printStackTrace();
+        }catch (Exception e5){
+            e5.printStackTrace();
         }
 
 
@@ -208,12 +224,16 @@ public class XlendarFrame extends JFrame implements ActionListener {
                     button.setText(inputTime + "\n" + inputEvent);
                     String message = "insert into event values('"+ w + "','" + i + "','" + today + "','" + inputTime + "','" + inputEvent + "')";
 
-                    writer.append(message);
-                    writer.append("\r\n");
-                    writer.close();
-
-                    out.println(message);
-                    out.flush();
+                    if (client == null){
+                        //IO write into local document
+                        writer.append(message);
+                        writer.append("\r\n");
+                        writer.close();
+                    }else{
+                        //Socket emits message
+                        out.println(message);
+                        out.flush();
+                    }
 
                 }catch(Exception e2){
                     e2.printStackTrace();
